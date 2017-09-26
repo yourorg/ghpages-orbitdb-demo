@@ -13,16 +13,176 @@
 
   <link href="styling.css" rel="stylesheet" type="text/css">
 
+
+
+  <script src="https://unpkg.com/ipfs/dist/index.min.js"></script>
+  <script type="text/javascript">
+    const repoPath = 'ipfs-' + Math.random()
+
+    // Create an IPFS node
+    const node = new Ipfs({
+      init: false,
+      start: false,
+      repo: repoPath
+    })
+
+    // Init the node
+    node.init(handleInit)
+
+    function handleInit (err) {
+      if (err) {
+        throw err
+      }
+
+      node.start(() => {
+        console.log('Online status: ', node.isOnline() ? 'online' : 'offline')
+
+        document.getElementById("status").innerHTML= 'Node status: ' + (node.isOnline() ? 'online' : 'offline')
+
+        // You can write more code here to use it. Use methods like
+        // node.files.add, node.files.get. See the API docs here:
+        // https://github.com/ipfs/interface-ipfs-core/tree/master/API
+      })
+    }
+  </script>
+
 </head>
 <body>
-  <h1>Hello, Netlify Community!</h1>
-  Ain't this stuff cool?
-  <br/>
-  <br/>
+  <h1>IPFS client served by Netlify!</h1>
 
-  <a href="#" class="btn btn-primary">Primary</a>
-  <script src="live.js" type="text/javascript" ></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+  <p>This page creates an IPFS node in your browser and drops it into the global Javascript namespace as <b><em style="background-color:#d7d6d6">node</em></b>. Open the console to play around with it.</p>
+  <p>Note that opening two tabs of this page in the same browser won't work well, because they will share node configuration. You'll end up trying to run two instances of the same node, with the same private key and identity, which is a Bad Idea.</p>
+  <h1 id="status">Node status: offline</h1>
+
+  <input id="strSample" type="text" placeholder="Write an example string here." />
+  <button id="btn_commit" type="button" class="btn btn-primary">
+    Commit as an IPFS document
+  </button>
+  <br><br>
+  <div id="txt_status"></div>
+  <hr/>
+  <input id="str_hash" type="text" placeholder="Paste the document hash here." />
+  <button id="btn_retrieve" type="button" class="btn btn-primary">
+    Retrieve that IPFS document
+  </button>
+  <br><br>
+  <div id="txt_response"></div>
+
+  <hr/>
+  <script type="text/javascript">
+
+    let msg = '';
+    const txtResponse = document.getElementById("txt_response");
+    const strHashField = document.getElementById("str_hash");
+    const btnRetrieve = document.getElementById("btn_retrieve");
+
+    const retrieveDoc = () => {
+      btnRetrieve.disabled = true;
+
+      const hashDocument = strHashField.value;
+      txtResponse.innerHTML = hashDocument;
+
+      node.files.cat(hashDocument, function (err, stream) {
+        var res = ''
+
+        stream.on('data', function (chunk) {
+          res += chunk.toString()
+        })
+
+        stream.on('error', function (err) {
+          msg = 'Error - ipfs files cat ';
+          txtResponse.innerHTML = msg;
+          console.error(msg, err)
+        })
+
+        stream.on('end', function () {
+          msg = 'IPFS returns : ';
+          txtResponse.innerHTML = msg + res;
+          console.log(msg, res)
+        })
+      });
+    }
+
+    btnRetrieve.addEventListener('click', retrieveDoc);
+
+
+
+    const txtStatus = document.getElementById("txt_status");
+    const strSampleField = document.getElementById("strSample");
+    const btnCommit = document.getElementById("btn_commit");
+
+    const submitDoc = () => {
+      btnCommit.disabled = true;
+
+      const strSample = strSampleField.value
+      txtStatus.innerHTML = strSample;
+
+      msg = 'IPFS -- text successfully stored : ';
+      node.files.add(new node.types.Buffer( strSample ), (err, res) => {
+        if (err || !res) {
+          msg = 'Error - ipfs files add';
+          txtStatus.innerHTML = msg;
+          return console.error(msg, err, res)
+        }
+
+        res.forEach((file) => {
+          txtStatus.innerHTML = msg + file.hash;
+          console.log(msg, file);
+        })
+      })
+
+    }
+
+    btnCommit.addEventListener('click', submitDoc);
+
+  </script>
+
+
+
+
+
+
+
+
+  <hr/>
+  <h2>Some suggestions</h2>
+
+  <p>You can cat that same file. If you used the exact same string as above ('Hello world!') you should have an hash like this: 'QmQzCQn4puG4qu8PVysxZmscmQ5vT1ZXpqo7f58Uh9QfyY'</p>
+
+  <code style="display:block; white-space:pre-wrap; background-color:#d7d6d6">
+    node.files.cat('QmQzCQn4puG4qu8PVysxZmscmQ5vT1ZXpqo7f58Uh9QfyY', function (err, stream) {
+      var res = ''
+
+      stream.on('data', function (chunk) {
+        res += chunk.toString()
+      })
+
+      stream.on('error', function (err) {
+        console.error('Error - ipfs files cat ', err)
+      })
+
+      stream.on('end', function () {
+        console.log('Got:', res)
+      })
+    })
+  </code>
+
+
+
+  <!-- --------------------------  reserved space below for styling ----------------------- -->
+  <script
+    src="live.js"
+    type="text/javascript">
+  </script>
+  <script
+    src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js">
+  </script>
+  <script
+    src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+    integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+    crossorigin="anonymous">
+  </script>
+
 </body>
 </html>
