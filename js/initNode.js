@@ -62,7 +62,7 @@ const addrsList = (members) => {
 
 }
 
-const enough = 8;
+const enough = 9;
 ( addrsCheck = () => {
    
   let countAddrs = 0;
